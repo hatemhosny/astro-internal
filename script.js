@@ -1,3 +1,5 @@
+// based on https://github.com/snowpackjs/astro-repl/blob/main/src/%40astro/internal/index.ts
+// and https://github.com/snowpackjs/astro-repl/blob/main/src/utils/astro.ts
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -25,56 +27,6 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-export function renderAstroComponent(component) {
-    var component_1, component_1_1;
-    var e_1, _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        let template = '';
-        try {
-            for (component_1 = __asyncValues(component); component_1_1 = yield component_1.next(), !component_1_1.done;) {
-                const value = component_1_1.value;
-                if (value || value === 0) {
-                    template += value;
-                }
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (component_1_1 && !component_1_1.done && (_a = component_1.return)) yield _a.call(component_1);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        return template;
-    });
-}
-export function renderToString(result, componentFactory, props, children = {}) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const Component = yield componentFactory(result, props, children);
-        let template = yield renderAstroComponent(Component);
-        return template;
-    });
-}
-export function renderPage(result, Component, props, children) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const template = yield renderToString(result, Component, props, children);
-        const styles = Array.from(result.styles).map(style => renderElement('style', style));
-        const scripts = Array.from(result.scripts).map(script => renderElement('script', script));
-        return template.replace("</head>", styles.join('\n') + scripts.join('\n') + "</head>");
-    });
-}
-function renderElement(name, { props: _props, children = '' }) {
-    const { hoist: _, "data-astro-id": astroId, "define:vars": defineVars } = _props, props = __rest(_props, ["hoist", "data-astro-id", "define:vars"]);
-    if (defineVars) {
-        if (name === 'style') {
-            children = defineStyleVars(astroId, defineVars) + '\n' + children;
-        }
-        if (name === 'script') {
-            children = defineScriptVars(defineVars) + '\n' + children;
-        }
-    }
-    return `<${name}${spreadAttributes(props)}>${children}</${name}>`;
-}
 // import { valueToEstree, Value } from 'estree-util-value-to-estree';
 // import * as astring from 'astring';
 var or = Object.defineProperty;
@@ -748,6 +700,56 @@ var L = ye(function (o, r) {
 }), ge = me(L), de = L.EXPRESSIONS_PRECEDENCE, xe = L.GENERATOR, Ae = L.NEEDS_PARENTHESES, ve = L.baseGenerator, Rr = ge, Se = L.generate;
 const valueToEstree = fe;
 const astring = _r;
+export function renderAstroComponent(component) {
+    var component_1, component_1_1;
+    var e_1, _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        let template = '';
+        try {
+            for (component_1 = __asyncValues(component); component_1_1 = yield component_1.next(), !component_1_1.done;) {
+                const value = component_1_1.value;
+                if (value || value === 0) {
+                    template += value;
+                }
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (component_1_1 && !component_1_1.done && (_a = component_1.return)) yield _a.call(component_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        return template;
+    });
+}
+export function renderToString(result, componentFactory, props, children = {}) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const Component = yield componentFactory(result, props, children);
+        let template = yield renderAstroComponent(Component);
+        return template;
+    });
+}
+export function renderPage(result, Component, props, children) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const template = yield renderToString(result, Component, props, children);
+        const styles = Array.from(result.styles).map(style => renderElement('style', style));
+        const scripts = Array.from(result.scripts).map(script => renderElement('script', script));
+        return template.replace("</head>", styles.join('\n') + scripts.join('\n') + "</head>");
+    });
+}
+function renderElement(name, { props: _props, children = '' }) {
+    const { hoist: _, "data-astro-id": astroId, "define:vars": defineVars } = _props, props = __rest(_props, ["hoist", "data-astro-id", "define:vars"]);
+    if (defineVars) {
+        if (name === 'style') {
+            children = defineStyleVars(astroId, defineVars) + '\n' + children;
+        }
+        if (name === 'script') {
+            children = defineScriptVars(defineVars) + '\n' + children;
+        }
+    }
+    return `<${name}${spreadAttributes(props)}>${children}</${name}>`;
+}
 const { generate, GENERATOR } = astring;
 // A more robust version alternative to `JSON.stringify` that can handle most values
 // see https://github.com/remcohaszing/estree-util-value-to-estree#readme
@@ -930,3 +932,43 @@ export const defineScriptVars = (vars) => {
     }
     return output;
 };
+export const renderAstroToHTML = (content) => __awaiter(void 0, void 0, void 0, function* () {
+    const url = `data:application/javascript;base64,${btoa(content)}`;
+    let mod;
+    let html;
+    try {
+        ({ default: mod } = yield import(url));
+    }
+    catch (e) {
+        return {
+            errors: [e],
+        };
+    }
+    if (!mod) {
+        return;
+    }
+    try {
+        html = yield renderPage({
+            styles: new Set(),
+            scripts: new Set(),
+            /** This function returns the `Astro` faux-global */
+            createAstro(props) {
+                // const site = location;
+                const url = new URL((location === null || location === void 0 ? void 0 : location.href) || 'http://localhost:3000/');
+                // const canonicalURL = getCanonicalURL(pathname, astroConfig.buildOptions.site || origin)
+                return {
+                    isPage: true,
+                    site: url,
+                    request: { url, canonicalURL: url },
+                    props,
+                };
+            },
+        }, yield mod, {}, {});
+    }
+    catch (e) {
+        return {
+            errors: [e],
+        };
+    }
+    return html;
+});
