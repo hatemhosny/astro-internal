@@ -755,7 +755,7 @@ const customGenerator = Object.assign(Object.assign({}, GENERATOR), { Literal(no
         if (node.raw != null) {
             // escape closing script tags in strings so browsers wouldn't interpret them as
             // closing the actual end tag in HTML
-            state.write(node.raw.replace('</script>', '<\\/script>'));
+            state.write(node.raw.replace('</scr' + 'ipt>', '<\\/script>'));
         }
         else {
             GENERATOR.Literal(node, state);
@@ -850,7 +850,7 @@ import setup from 'astro/client/${hydrate}.js';
 setup("${astroId}", {${metadata.hydrateArgs ? `value: ${JSON.stringify(metadata.hydrateArgs)}` : ''}}, async () => {
   ${hydrationSource}
 });
-</script>
+</scr` + `ipt>
 `;
         return hydrationScript;
     });
